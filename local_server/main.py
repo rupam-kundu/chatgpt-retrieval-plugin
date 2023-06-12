@@ -4,6 +4,7 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Body, UploadFile
 from loguru import logger
+import openai
 
 from models.api import (
     DeleteRequest,
@@ -18,7 +19,7 @@ from services.file import get_document_from_file
 
 from starlette.responses import FileResponse
 
-from models.models import DocumentMetadata, Source
+from models.models import DocumentMetadata, Source, Answer
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -113,6 +114,43 @@ async def query_main(request: QueryRequest = Body(...)):
         logger.error(e)
         raise HTTPException(status_code=500, detail="Internal Service Error")
 
+
+@app.post("/answer_question", response_model=Answer)
+async def answer_question(request: QueryRequest = Body(...)):
+    try:
+        results = await datastore.query(
+            request.queries,
+        )
+        query_response = QueryResponse(results=results)
+        files_string = ' '.join(result.text for result in query_response.results[0].results)
+        messages = [
+            {
+                "role": "system",
+                "content": f"Given a question, try to answer it using the content of the file extracts below, and if you cannot answer, " \
+                f"just output \"I couldn't find the answer to that question in your files.\".\n\n" \
+                f"If the answer is not contained in the files or if there are no file extracts, respond with \"I couldn't find the answer " \
+                f"to that question in your files.\" If the question is not actually a question, respond with \"That's not a valid question.\"\n\n" \
+                f"In the cases where you can find the answer, give the answer. Give the answer in markdown format." \
+                f"Use the following format:\n\nQuestion: <question>\n\n" \
+                f"Answer: <answer or \"I couldn't find the answer to that question in your files\" or \"That's not a valid question.\">\n\n" \
+                f"Question: {request.queries[0].query}\n\n" \
+                f"Files:\n{files_string}\n" \
+                f"Answer:"
+            },
+        ]
+        response = openai.ChatCompletion.create(
+            messages=messages,
+            model="gpt-4",
+            max_tokens=1000,
+            temperature=0,
+        )
+        choices = response["choices"]
+        answer = choices[0].message.content.strip()
+        return {"answer": answer}
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail="Internal Service Error")
+    
 
 @app.delete(
     "/delete",
