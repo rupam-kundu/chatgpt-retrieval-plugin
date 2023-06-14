@@ -32,11 +32,12 @@ function FileQandAArea(props: FileQandAAreaProps) {
       setAnswerError("Please ask a question.");
       return;
     }
+    {/* 
     if (props.files.length === 0) {
       setAnswerError("Please upload files before asking a question.");
       return;
     }
-
+    */}
     setSearchResultsLoading(true);
     setAnswerError("");
 
@@ -46,7 +47,11 @@ function FileQandAArea(props: FileQandAAreaProps) {
       const answerResponse = await axios.post(
         `${SERVER_ADDRESS}/answer_question`,
         {
-          question,
+          "queries": [
+            {
+              "query": question
+            }
+          ]
         }
       );
 
@@ -79,7 +84,7 @@ function FileQandAArea(props: FileQandAAreaProps) {
       <div className="space-y-2">
         <input
           className="border rounded border-gray-200 w-full py-1 px-2"
-          placeholder="e.g. What were the key takeaways from the Q1 planning meeting?"
+          placeholder="e.g. What is aging?"
           name="search"
           ref={searchBarRef}
           onKeyDown={handleEnterInSearchBar}

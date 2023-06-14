@@ -30,6 +30,7 @@ PORT = 3333
 origins = [
     f"http://localhost:{PORT}",
     "https://chat.openai.com",
+    "http://localhost:3000"
 ]
 
 app.add_middleware(
