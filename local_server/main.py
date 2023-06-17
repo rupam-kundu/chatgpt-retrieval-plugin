@@ -142,7 +142,7 @@ async def answer_question(request: QueryRequest = Body(...)):
         response = openai.ChatCompletion.create(
             messages=messages,
             model="gpt-4",
-            max_tokens=1000,
+            max_tokens=2000,
             temperature=0,
         )
         choices = response["choices"]
