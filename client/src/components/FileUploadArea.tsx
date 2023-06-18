@@ -29,11 +29,13 @@ function FileUploadArea(props: FileUploadAreaProps) {
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const dropzoneRef = useRef<HTMLLabelElement>(null);
+  const [uploadSuccess, setUploadSuccess] = useState("");
 
   const handleFileChange = useCallback(
     async (selectedFiles: FileList | null) => {
       if (selectedFiles && selectedFiles.length > 0) {
         setError("");
+        setUploadSuccess("");
 
         if (files.length + selectedFiles.length > props.maxNumFiles) {
           setError(`You can only upload up to ${props.maxNumFiles} files.`);
@@ -72,10 +74,9 @@ function FileUploadArea(props: FileUploadAreaProps) {
                     },
                   }
                 );
-
+                console.log(processFileResponse);
                 if (
-                  processFileResponse.status === 200 &&
-                  processFileResponse.data.success
+                  processFileResponse.status === 200
                 ) {
                   const fileObject: FileLite = {
                     name: file.name,
@@ -83,7 +84,7 @@ function FileUploadArea(props: FileUploadAreaProps) {
                     expanded: false,
                   };
                   console.log(fileObject);
-
+                  setUploadSuccess("File uploaded successfully!");
                   return fileObject;
                 } else {
                   console.log("Error processing file");
@@ -95,7 +96,7 @@ function FileUploadArea(props: FileUploadAreaProps) {
               }
             } else {
               alert(
-                `Invalid file type or size. Only TXT, PD or DOCX are allowed, up to ${props.maxFileSizeMB}MB.`
+                `Invalid file type or size. Only TXT, PDF or DOCX are allowed, up to ${props.maxFileSizeMB}MB.`
               );
               return null; // Skip this file
             }
@@ -159,15 +160,10 @@ function FileUploadArea(props: FileUploadAreaProps) {
             <div className="text-gray-500 flex flex-col items-center text-center">
               <ArrowUpTrayIcon className="w-7 h-7 mb-4" />
               <p className="mb-2 text-sm">
-                <span className="font-semibold">Click to upload</span> or drag
-                and drop
+                <span className="font-semibold">Click to upload</span>
               </p>
               <p className="text-xs">
-                PDF, DOCX or TXT (max {props.maxFileSizeMB}MB per file)
-              </p>
-              <p className="text-xs mt-1">
-                You can upload up to {props.maxNumFiles - files.length} more{" "}
-                {props.maxNumFiles - files.length === 1 ? "file" : "files"}
+                (PDF, TXT or DOCX)
               </p>
               <input
                 id="dropzone-file"
@@ -180,6 +176,12 @@ function FileUploadArea(props: FileUploadAreaProps) {
           )}
         </div>
       </label>
+
+      {uploadSuccess && (
+      <div className="flex items-center justify-center w-full mt-4">
+        <p className="text-sm text-green-500">{uploadSuccess}</p>
+      </div>
+      )}
 
       {error && (
         <div className="flex items-center justify-center w-full mt-4">
