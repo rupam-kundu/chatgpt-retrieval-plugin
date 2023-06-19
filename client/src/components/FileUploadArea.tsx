@@ -165,10 +165,15 @@ function FileUploadArea(props: FileUploadAreaProps) {
             <div className="text-gray-500 flex flex-col items-center text-center">
               <ArrowUpTrayIcon className="w-7 h-7 mb-4" />
               <p className="mb-2 text-sm">
-                <span className="font-semibold">Click to upload</span>
+                <span className="font-semibold">Click to upload</span> or drag
+                and drop files here.
               </p>
               <p className="text-xs">
-                (PDF, TXT or DOCX)
+                PDF, DOCX or TXT (max {props.maxFileSizeMB} MB per file)
+              </p>
+              <p className="text-xs mt-1">
+                You can upload up to {props.maxNumFiles - files.length} more{" "}
+                {props.maxNumFiles - files.length === 1 ? "file." : "files."}
               </p>
               <input
                 id="dropzone-file"
