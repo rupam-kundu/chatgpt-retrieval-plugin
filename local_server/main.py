@@ -124,6 +124,7 @@ async def answer_question(request: QueryRequest = Body(...)):
         )
         query_response = QueryResponse(results=results)
         files_string = ' '.join(result.text for result in query_response.results[0].results)
+        filename = query_response.results[0].results[0].metadata.filename
         messages = [
             {
                 "role": "system",
@@ -147,7 +148,7 @@ async def answer_question(request: QueryRequest = Body(...)):
         )
         choices = response["choices"]
         answer = choices[0].message.content.strip()
-        return {"answer": answer}
+        return {"answer": answer, "filename": filename}
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Internal Service Error")

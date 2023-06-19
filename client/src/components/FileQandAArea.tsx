@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useRef, useState } from "react";
+import React, { memo, useCallback, useRef, useState, useEffect} from "react";
 import { Transition } from "@headlessui/react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
@@ -19,7 +19,14 @@ function FileQandAArea(props: FileQandAAreaProps) {
   const [searchResultsLoading, setSearchResultsLoading] =
     useState<boolean>(false);
   const [answer, setAnswer] = useState("");
+  const [filename, setFilename] = useState("");
 
+  useEffect(() => {
+    console.log('Filtered files:', props.files.filter((file) =>
+      isFileNameInString(file.name, filename)
+    ));
+  }, [props.files, filename]);
+  
   const handleSearch = useCallback(async () => {
     if (searchResultsLoading) {
       return;
@@ -57,6 +64,9 @@ function FileQandAArea(props: FileQandAAreaProps) {
 
       if (answerResponse.status === 200) {
         setAnswer(answerResponse.data.answer);
+        setFilename(answerResponse.data.filename);
+        console.log(answerResponse);
+        console.log('Filename:', answerResponse.data.filename);
       } else {
         setAnswerError("Sorry, something went wrong!");
       }
@@ -124,7 +134,7 @@ function FileQandAArea(props: FileQandAAreaProps) {
           <Transition
             show={
               props.files.filter((file) =>
-                isFileNameInString(file.name, answer)
+                isFileNameInString(file.name, filename)
               ).length > 0
             }
             enter="transition duration-600 ease-out"
@@ -137,7 +147,7 @@ function FileQandAArea(props: FileQandAAreaProps) {
           >
             <FileViewerList
               files={props.files.filter((file) =>
-                isFileNameInString(file.name, answer)
+                isFileNameInString(file.name, filename)
               )}
               title="Sources"
               listExpanded={true}

@@ -63,6 +63,11 @@ function FileUploadArea(props: FileUploadAreaProps) {
 
               const formData = new FormData();
               formData.append("file", file);
+              const metadata = {
+                source: "file",
+                filename: file.name
+              };
+              formData.append("metadata", JSON.stringify(metadata));
 
               try {
                 const processFileResponse = await axios.post(
