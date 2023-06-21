@@ -5,6 +5,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Depends, Body, UploadFil
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
+import openai
 
 from models.api import (
     DeleteRequest,
@@ -17,14 +18,17 @@ from models.api import (
 from datastore.factory import get_datastore
 from services.file import get_document_from_file
 
-from models.models import DocumentMetadata, Source
+from models.models import DocumentMetadata, Source, Answer
+from fastapi.middleware.cors import CORSMiddleware
 
 bearer_scheme = HTTPBearer()
 BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
+logger.info(f"Loaded BEARER_TOKEN: {BEARER_TOKEN}")
 assert BEARER_TOKEN is not None
 
 
 def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    logger.info(f"Received credentials: {credentials}")
     if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     return credentials
@@ -42,6 +46,18 @@ sub_app = FastAPI(
     dependencies=[Depends(validate_token)],
 )
 app.mount("/sub", sub_app)
+
+origins = [
+    f"http://localhost:3000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post(
@@ -121,6 +137,44 @@ async def query(
         logger.error(e)
         raise HTTPException(status_code=500, detail="Internal Service Error")
 
+
+@app.post("/answer_question", response_model=Answer)
+async def answer_question(request: QueryRequest = Body(...)):
+    try:
+        results = await datastore.query(
+            request.queries,
+        )
+        query_response = QueryResponse(results=results)
+        files_string = ' '.join(result.text for result in query_response.results[0].results)
+        filename = query_response.results[0].results[0].metadata.filename
+        messages = [
+            {
+                "role": "system",
+                "content": f"Given a question, try to answer it using the content of the file extracts below, and if you cannot answer, " \
+                f"just output \"I couldn't find the answer to that question in your files.\".\n\n" \
+                f"If the answer is not contained in the files or if there are no file extracts, respond with \"I couldn't find the answer " \
+                f"to that question in your files.\" If the question is not actually a question, respond with \"That's not a valid question.\"\n\n" \
+                f"In the cases where you can find the answer, give the answer. Give the answer in markdown format." \
+                f"Use the following format:\n\nQuestion: <question>\n\n" \
+                f"Answer: <answer or \"I couldn't find the answer to that question in your files\" or \"That's not a valid question.\">\n\n" \
+                f"Question: {request.queries[0].query}\n\n" \
+                f"Files:\n{files_string}\n" \
+                f"Answer:"
+            },
+        ]
+        response = openai.ChatCompletion.create(
+            messages=messages,
+            model="gpt-4",
+            max_tokens=2000,
+            temperature=0,
+        )
+        choices = response["choices"]
+        answer = choices[0].message.content.strip()
+        return {"answer": answer, "filename": filename}
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail="Internal Service Error")
+    
 
 @app.delete(
     "/delete",

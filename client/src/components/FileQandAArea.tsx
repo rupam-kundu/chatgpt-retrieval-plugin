@@ -39,18 +39,19 @@ function FileQandAArea(props: FileQandAAreaProps) {
       setAnswerError("Please ask a question.");
       return;
     }
-    {/* 
+    { 
     if (props.files.length === 0) {
       setAnswerError("Please upload files before asking a question.");
       return;
     }
-    */}
+    }
     setSearchResultsLoading(true);
     setAnswerError("");
 
     let results: FileChunk[] = [];
 
     try {
+      console.log(`Bearer token: ${process.env.NEXT_PUBLIC_BEARER_TOKEN}`);
       const answerResponse = await axios.post(
         `${SERVER_ADDRESS}/answer_question`,
         {
@@ -59,6 +60,11 @@ function FileQandAArea(props: FileQandAAreaProps) {
               "query": question
             }
           ]
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_BEARER_TOKEN}`
+          }
         }
       );
 
