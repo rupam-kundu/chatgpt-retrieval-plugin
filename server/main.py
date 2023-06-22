@@ -23,12 +23,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 bearer_scheme = HTTPBearer()
 BEARER_TOKEN = os.environ.get("BEARER_TOKEN")
-logger.info(f"Loaded BEARER_TOKEN: {BEARER_TOKEN}")
 assert BEARER_TOKEN is not None
 
 
 def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    logger.info(f"Received credentials: {credentials}")
     if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     return credentials
