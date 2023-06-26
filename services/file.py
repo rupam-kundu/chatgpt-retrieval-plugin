@@ -8,6 +8,7 @@ import docx2txt
 import csv
 import pptx
 from loguru import logger
+import tempfile
 
 from models.models import Document, DocumentMetadata
 
@@ -97,8 +98,12 @@ async def extract_text_from_form_file(file: UploadFile):
     logger.info("file: ", file)
 
     file_stream = await file.read()
+    await file.close()
 
-    temp_file_path = "/tmp/temp_file"
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    temp_file_path = temp_file.name
+    temp_file.close()
+    # temp_file_path = "/tmp/temp_file"
 
     # write the file to a temporary location
     with open(temp_file_path, "wb") as f:
